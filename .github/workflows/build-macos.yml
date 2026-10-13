@@ -47,9 +47,10 @@ jobs:
             -sdk macosx \
             -destination 'generic/platform=macOS' \
             -derivedDataPath "$RUNNER_TEMP/OpenTranslateDerived" \
+            MACOSX_DEPLOYMENT_TARGET=12.0 \
             CODE_SIGNING_ALLOWED=NO \
             build
-
+            
       - name: Package application
         run: |
           APP="$RUNNER_TEMP/OpenTranslateDerived/Build/Products/Release/OpenTranslate.app"
