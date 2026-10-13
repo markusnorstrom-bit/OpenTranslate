@@ -1,0 +1,60 @@
+
+name: Build OpenTranslate for macOS
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  macos:
+    runs-on: xcode-27
+    timeout-minutes: 60
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.33.4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '26'
+          cache: pnpm
+          cache-dependency-path: extension/pnpm-lock.yaml
+
+      - name: Install dependencies
+        working-directory: extension
+        run: pnpm install --frozen-lockfile
+
+      - name: Build Safari extension
+        working-directory: extension
+        run: pnpm build:safari
+
+      - name: Sync Xcode resources
+        run: bash scripts/sync-resources.sh
+
+      - name: Build macOS application
+        run: |
+          xcodebuild \
+            -project apple/OpenTranslate/OpenTranslate.xcodeproj \
+            -scheme 'OpenTranslate (macOS)' \
+            -configuration Release \
+            -sdk macosx \
+            -destination 'generic/platform=macOS' \
+            -derivedDataPath "$RUNNER_TEMP/OpenTranslateDerived" \
+            CODE_SIGNING_ALLOWED=NO \
+            build
+
+      - name: Package application
+        run: |
+          APP="$RUNNER_TEMP/OpenTranslateDerived/Build/Products/Release/OpenTranslate.app"
+          test -d "$APP"
+          ditto -c -k --keepParent "$APP" "$RUNNER_TEMP/OpenTranslate-macOS.zip"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: OpenTranslate-macOS-unsigned
+          path: ${{ runner.temp }}/OpenTranslate-macOS.zip
