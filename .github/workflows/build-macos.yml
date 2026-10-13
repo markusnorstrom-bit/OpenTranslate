@@ -32,9 +32,11 @@ jobs:
       - name: Build Safari extension
         working-directory: extension
         run: pnpm build:safari
-
+        
       - name: Sync Xcode resources
-        run: bash scripts/sync-resources.sh
+        run: |
+          mkdir -p "apple/OpenTranslate/Shared (Extension)/Resources"
+          rsync -a --delete extension/.output/safari-mv3/ "apple/OpenTranslate/Shared (Extension)/Resources/"
 
       - name: Build macOS application
         run: |
